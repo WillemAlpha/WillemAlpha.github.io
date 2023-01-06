@@ -1,0 +1,106 @@
+---
+title: "ML Proj"
+author: "Willem Abrie"
+date: "`r Sys.Date()`"
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Abstract
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways.
+
+The goal of your project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set. You may use any of the other variables to predict with. You should create a report describing how you built your model, how you used cross validation, what you think the expected out of sample error is, and why you made the choices you did. You will also use your prediction model to predict 20 different test cases.
+
+## Executive Summary
+Variables with little or no data in them were excluded from the analysis. A validation set was set aside using 25% of the testing data.
+
+A decision tree was used for this classification problem. A CART model was computationally efficient but resulted in low accuracy (about 47%). Hence a boosted model was used which resulted in 92% accuracy.
+
+
+## System Info
+
+The following version of RStudion was used: RStudion 2022.07.2 Build 576.
+For more info on packages see the session info in the Appendix.
+
+
+## Data Gathering
+
+Data was downloaded directly from the links that were provided with the assignment.
+
+```{r downloadData}
+rm(list = ls())
+training <- read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv")
+testing <- read.csv("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv")
+```
+
+```{r`exploration}
+
+```
+
+## Data Wrangling
+
+The columns with little or no information were dropped. The classe and user name variables were converted to factors.
+```{r dataWrangling}
+training1 <- training[, c(2, 8:11, 37:49, 60:68, 84:86, 160)]
+training1$user_name <- factor(training1$user_name)
+training1$classe <- factor(training1$classe)
+#summary(training1)
+
+test <- testing[, c(2, 8:11, 37:49, 60:68, 84:86, 160)]
+test$user_name <- factor(test$user_name)
+
+```
+
+## Model Training
+
+A validation set was split off from the training data. We trained a boosted model on the remaining training data. It was quite slow.
+```{r ModelFit}
+library(caret)
+set.seed(100)
+part <- createDataPartition(training1$classe, p = 3/4, list = FALSE)
+train <- training1[part, ]
+validate <- training1[-part, ]
+
+start.time <- Sys.time()
+model1 <- train(classe ~ ., method = "gbm", data = train, verbose = FALSE)
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
+
+print(model1)
+plot(model1)
+```
+
+## Validation
+The model was validated by predicting on the validation set and comparing to the reference values in the classe variable. The outcome was favourable with a 92% accuracy. It was decided that this is adequate, even though no preprocessing like transformations or PCA's were performed.
+
+```{r Evaluation}
+predClasse <- predict(object = model1, newdata = validate)
+confusionMatrix(validate$classe, predClasse)
+```
+## Prediction of the 20 test set values
+
+```{r Prediction}
+predTest <- predict(object = model1, newdata = test)
+predTest
+```
+
+## Conclusion
+
+The boosted decision tree was computationally slow but had a good outcome. All 20 test values proved to be correct, resulting in a 100% score when submitted on the Coursera assessment form.
+
+# Appendix
+
+## Session Info
+
+```{r}
+sessionInfo()
+```
+
+
+
